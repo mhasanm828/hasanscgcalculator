@@ -137,6 +137,13 @@
         <option value="4">4.00</option>
       </select>
     </div>
+    <div class="d-flex align-items-center gap-2 mt-2 flex-wrap" style="font-size:13.5px">
+      <label for="remSubjects" class="fw-bold">Remaining subjects:</label>
+      <input type="number" id="remSubjects" class="form-control form-control-sm" style="width:80px" min="1" max="40" value="9" oninput="updateTarget()">
+      <label for="remCredit" class="fw-bold">Credits each:</label>
+      <input type="number" id="remCredit" class="form-control form-control-sm" style="width:70px" min="1" max="6" value="4" oninput="updateTarget()">
+      <span style="color:var(--mut);font-size:12.5px">(Check your syllabus — correct these if different)</span>
+    </div>
     <div id="targetBox" class="mt-2" style="font-size:13.5px;line-height:1.7"></div>
   </div>
 
@@ -292,14 +299,19 @@ function updateTarget(){
     box.innerHTML = `<span style="color:#dc2626;font-weight:700">CGPA is final at ${cgpa.toFixed(2)} (below ${target.toFixed(2)}). No years left to improve it.</span>`;
     return;
   }
-  const avgCrPerYear = data.cr / data.yearsDone;
-  const crRem = Math.round(avgCrPerYear * yearsLeft);
+  const remSubjects = parseInt(document.getElementById('remSubjects')?.value) || 0;
+  const remCredit = parseInt(document.getElementById('remCredit')?.value) || 0;
+  const crRem = remSubjects * remCredit;
+  if(crRem <= 0){
+    box.innerHTML = `<span style="color:var(--mut)">Enter your remaining subjects and credits per subject above to see what GPA you need.</span>`;
+    return;
+  }
   const needPts = target * (data.cr + crRem) - data.pts;
   const needGpa = needPts / crRem;
   if(needGpa > 4){
-    box.innerHTML = `<span style="color:#dc2626;font-weight:700">Even with GPA 4.00 in your remaining ${yearsLeft} year(s), CGPA ${target.toFixed(2)} is not reachable.</span> <span style="color:var(--mut)">(You would need ${needGpa.toFixed(2)}.)</span>`;
+    box.innerHTML = `<span style="color:#dc2626;font-weight:700">Even with GPA 4.00 in your remaining ${yearsLeft} year(s) (${crRem} credits), CGPA ${target.toFixed(2)} is not reachable.</span> <span style="color:var(--mut)">(You would need ${needGpa.toFixed(2)}.)</span>`;
   }else{
-    box.innerHTML = `To reach CGPA <b>${target.toFixed(2)}</b>, you need an average GPA of <b style="color:var(--acc)">${needGpa.toFixed(2)}</b> in your remaining <b>${yearsLeft}</b> year(s) <span style="color:var(--mut)">(~${crRem} credits, estimated from your average credits/year)</span>.`;
+    box.innerHTML = `To reach CGPA <b>${target.toFixed(2)}</b>, you need an average GPA of <b style="color:var(--acc)">${needGpa.toFixed(2)}</b> in your remaining <b>${yearsLeft}</b> year(s) <span style="color:var(--mut)">(${remSubjects} subjects × ${remCredit} credits = ${crRem} credits)</span>.`;
   }
 }
 
@@ -503,6 +515,14 @@ async function calculate(){
     document.getElementById('cgpaHero').classList.remove('d-none');
     // Summary table + target planner
     window._CGPA_DATA = {pts, cr, yearsDone: results.length};
+    // Pre-fill remaining subjects: NU years usually add ~1 paper each year,
+    // so estimate next years from the last completed year's paper count.
+    const lastSubj = results.length ? results[results.length-1].courses.length : 0;
+    const remYears = Math.max(0, 4 - results.length);
+    let estRem = 0;
+    for(let i=1;i<=remYears;i++) estRem += lastSubj + i;
+    const rsEl = document.getElementById('remSubjects');
+    if(rsEl && estRem > 0) rsEl.value = estRem;
     let srows = '';
     for(const r of results){
       let ypts=0, ycr=0;
