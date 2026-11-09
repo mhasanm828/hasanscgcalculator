@@ -45,8 +45,6 @@
   .spinner{width:18px;height:18px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:-3px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .form-select,.form-select:focus{background:var(--input);border:1px solid var(--line);color:var(--txt)}
-  .nav-pills .nav-link{color:var(--mut)}
-  .nav-pills .nav-link.active{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
   code{color:var(--acc2)}
 </style>
 </head>
@@ -67,18 +65,12 @@
       <summary style="color:var(--acc);cursor:pointer;font-size:13px;font-weight:600">How to use</summary>
       <div class="mt-1" style="color:var(--mut);font-size:13px;line-height:1.7">
         <b style="color:var(--txt)">CGPA Calculator:</b> Enter Registration Number + 1st Year Exam Year → tap Calculate CGPA.<br>
-        <b style="color:var(--txt)">Batch Result:</b> Pick Subject + Year + Exam Year (or paste registration numbers) → tap Load Batch Results.
       </div>
     </details>
   </div>
 
   <div class="cardx p-4 mb-3 mt-2">
-    <ul class="nav nav-pills mb-3">
-      <li class="nav-item"><button class="nav-link active" onclick="switchTab('cgpa',this)">CGPA Calculator</button></li>
-      <li class="nav-item"><button class="nav-link" onclick="switchTab('college',this)">Batch Result</button></li>
-    </ul>
 
-    <div id="tab-cgpa">
     <div class="row g-2 mb-3">
       <div class="col-md-7">
         <label class="form-label" style="color:var(--mut)">Registration Number</label>
@@ -86,44 +78,12 @@
       </div>
       <div class="col-md-5">
         <label class="form-label" style="color:var(--mut)">1st Year Exam Year</label>
-        <input type="number" id="baseYear" class="form-control form-control-lg" value="2022" min="2006" max="2030">
+        <select id="baseYear" class="form-select form-select-lg"><option value="2020">2020</option><option value="2021">2021</option><option value="2022" selected>2022</option><option value="2023">2023</option><option value="2024">2024</option></select>
       </div>
     </div>
     <button class="btn btn-go w-100 text-white" id="btnCalc" onclick="calculate()">🧮 Calculate CGPA</button>
     <div id="status" class="mt-3" style="color:var(--mut)"></div>
-    </div>
 
-    <div id="tab-college" class="d-none">
-      <div class="row g-2 mb-3">
-        <div class="col-md-4">
-          <label class="form-label" style="color:var(--mut)">Subject</label>
-          <select id="cwSubject" class="form-select form-select-lg"></select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label" style="color:var(--mut)">Year</label>
-          <select id="cwLevel" class="form-select form-select-lg">
-            <option value="1">1st Year</option>
-            <option value="2">2nd Year</option>
-            <option value="3">3rd Year</option>
-            <option value="4">4th Year</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label" style="color:var(--mut)">Exam Year</label>
-          <input type="number" id="cwYear" class="form-control form-control-lg" value="2024" min="2006" max="2025">
-        </div>
-      </div>
-      <button class="btn btn-go w-100 text-white" id="btnCw" onclick="loadCollegeResults()">📋 Load Batch Results</button>
-      <div class="mt-3">
-        <label class="form-label" style="color:var(--mut)">Or paste registration numbers (full class list — one per line or comma separated)</label>
-        <textarea id="cwRegs" class="form-control" rows="3" placeholder="One per line or comma separated"></textarea>
-        <small style="color:var(--mut)">💡 পুরো ব্যাচের লিস্ট পেস্ট করলে সেই ইয়ারের <b>সবার</b> তথ্য আসবে। খালি রাখলে ডেটাবেজ থেকে লোড হবে।</small>
-      </div>
-      <div id="cwStatus" class="mt-3" style="color:var(--mut)"></div>
-      <div class="progress d-none mt-2" id="cwProg" style="height:10px;background:var(--input);border:1px solid var(--line)">
-        <div id="cwBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%;background:linear-gradient(90deg,var(--acc),var(--acc2))"></div>
-      </div>
-    </div>
   </div>
 
   <div id="cgpaHero" class="cgpa-hero p-4 mb-3 d-none text-center">
@@ -139,22 +99,6 @@
 
   <div id="years"></div>
 
-  <div id="cwResults" class="d-none">
-    <div class="cardx p-4 mb-3">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h5 class="fw-bold mb-0" id="cwTitle">Batch Results</h5>
-        <div class="d-flex gap-2">
-          <span class="badge badge-ok px-3 py-2" id="cwPassCount">—</span>
-          <button class="btn btn-sm btn-outline-success" onclick="exportCollegeCSV()">CSV</button>
-        </div>
-      </div>
-      <div class="table-responsive"><table class="table table-sm">
-        <thead><tr><th>#</th><th>Name</th><th>Reg No</th><th>GPA</th><th>Result</th><th>Failed In</th></tr></thead>
-        <tbody id="cwBody"></tbody>
-      </table></div>
-      <small style="color:var(--mut)">Reg. list from NU roll-sheet database (13,264 students).</small>
-    </div>
-  </div>
 
   <div class="text-center mt-2">
     <button class="btn btn-go text-white d-none px-5" id="btnPdf" onclick="exportPDF()">🖨️ Print Result PDF</button>
@@ -228,98 +172,6 @@ function yearGPA(courses){
 }
 
 function setStatus(html){ document.getElementById('status').innerHTML = html; }
-
-function switchTab(which, btn){
-  document.querySelectorAll('.nav-pills .nav-link').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  const isCgpa = which==='cgpa';
-  document.getElementById('tab-cgpa').classList.toggle('d-none', !isCgpa);
-  document.getElementById('tab-college').classList.toggle('d-none', isCgpa);
-  const show = isCgpa && !!window._calcDone;
-  ['cgpaHero','studentCard','years','btnPdf'].forEach(id=>document.getElementById(id).classList.toggle('d-none', !show));
-  document.getElementById('cwResults').classList.toggle('d-none', isCgpa || !CW_ROWS.length);
-}
-
-/* ================= COLLEGE-WISE RESULT ================= */
-let CW_ROWS = [];
-(function fillSubjects(){
-  const sel = document.getElementById('cwSubject');
-  sel.innerHTML = Object.keys(SUBJECTS).sort((a,b)=>a-b)
-    .map(k=>`<option value="${k}">${k} — ${SUBJECTS[k]}</option>`).join('');
-  sel.value = '23';
-})();
-
-async function loadCollegeResults(){
-  const subject = document.getElementById('cwSubject').value;
-  const level = parseInt(document.getElementById('cwLevel').value);
-  const examYear = parseInt(document.getElementById('cwYear').value);
-  const examCode = EXAMS[level-1].code;
-  const sessPrefix = String(examYear - level).slice(-2);  // reg digits 1-2 = session start
-  // pasted list takes priority (full class list); else auto-load from DB
-  const pasted = (document.getElementById('cwRegs').value||'').split(/[\s,;]+/).map(s=>s.trim()).filter(s=>/^\d{6,}$/.test(s));
-  const regs = pasted.length ? [...new Set(pasted)] :
-    Object.keys(STUDENT_DB).filter(r =>
-      r.slice(0,2)===sessPrefix && STUDENT_DB[r][0]===subject);
-  const srcNote = pasted.length ? 'pasted list' : 'database';
-  const st = document.getElementById('cwStatus');
-  if(!regs.length){ st.innerHTML = `No registrations found for this combination in the database.`; return; }
-
-  const btn = document.getElementById('btnCw'); btn.disabled = true;
-  document.getElementById('cwProg').classList.remove('d-none');
-  document.getElementById('cwBody').innerHTML = '';
-  CW_ROWS = [];
-  document.getElementById('cwTitle').textContent =
-    `${SUBJECTS[subject]} • ${EXAMS[level-1].label} ${examYear} (${regs.length} students, ${srcNote})`;
-
-  let done = 0, passed = 0, notFound = 0;
-  const bar = document.getElementById('cwBar');
-  async function worker(){
-    while(regs.length){
-      const reg = regs.shift();
-      try{
-        const j = await fetchResult(examCode, examYear, reg);
-        if(j && j.found && j.courses && j.courses.length){
-          const fails = j.courses.filter(c=>isFail(c.grade));
-          const {gpa} = yearGPA(j.courses);
-          const row = {name:j.name||'—', reg, gpa: gpa!==null?Math.round(gpa*100)/100:null,
-                       status:j.status||'', failed:fails.map(c=>c.code+' '+c.title).join('; ')};
-          if(!fails.length) passed++;
-          CW_ROWS.push(row);
-          appendCollegeRow(CW_ROWS.length, row);
-        } else notFound++;
-      }catch(e){ notFound++; }
-      done++;
-      bar.style.width = (done/(done+regs.length)*100)+'%';
-      st.innerHTML = `<span class="spinner"></span> ${done} / ${done+regs.length} checked…`;
-      await sleep(300);
-    }
-  }
-  await Promise.all([worker(), worker(), worker()]);
-  document.getElementById('cwResults').classList.remove('d-none');
-  document.getElementById('cwPassCount').textContent = `Passed: ${passed} / ${CW_ROWS.length}`;
-  st.innerHTML = `Done ✅ — ${CW_ROWS.length} results found (${passed} passed)` + (notFound?`, ${notFound} not found`:'') + `.`;
-  btn.disabled = false;
-}
-
-function appendCollegeRow(i, row){
-  const badge = row.failed
-    ? '<span class="badge badge-bad">Failed</span>'
-    : (/promoted/i.test(row.status) ? '<span class="badge badge-ok">'+row.status+'</span>' : '<span class="badge badge-warn">'+(row.status||'—')+'</span>');
-  document.getElementById('cwBody').insertAdjacentHTML('beforeend',
-    `<tr><td>${i}</td><td class="fw-semibold">${row.name}</td><td><code>${row.reg}</code></td>
-     <td class="fw-bold">${row.gpa!==null?row.gpa.toFixed(2):'—'}</td><td>${badge}</td>
-     <td style="color:var(--mut);font-size:12px">${row.failed||'—'}</td></tr>`);
-}
-
-function exportCollegeCSV(){
-  if(!CW_ROWS.length) return;
-  const q = v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const csv = ['Name,Reg No,GPA,Result,Failed In']
-    .concat(CW_ROWS.map(r=>[q(r.name),q(r.reg),r.gpa??'',q(r.status),q(r.failed)].join(','))).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8'}));
-  a.download = 'college_results.csv'; a.click();
-}
 
 async function calculate(){
   const reg = document.getElementById('regNo').value.trim();
