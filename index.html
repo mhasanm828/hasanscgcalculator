@@ -118,6 +118,28 @@
     <div class="mt-2 text-white-50" id="cgpaSub"></div>
   </div>
 
+  <div id="summaryCard" class="cardx p-4 mb-3 d-none">
+    <h5 class="fw-bold mb-3">CGPA Summary</h5>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Year</th><th>GPA</th><th>Credits</th><th>Grade Points</th></tr></thead>
+        <tbody id="summaryBody"></tbody>
+        <tfoot><tr><td><b>Total / CGPA</b></td><td><b id="summaryCgpa">—</b></td><td><b id="summaryCredits">—</b></td><td><b id="summaryPoints">—</b></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="d-flex align-items-center gap-2 mt-3 flex-wrap">
+      <label for="targetCgpa" class="fw-bold" style="font-size:13.5px">Target CGPA:</label>
+      <select id="targetCgpa" class="form-select form-select-sm" style="width:auto" onchange="updateTarget()">
+        <option value="3" selected>3.00</option>
+        <option value="3.25">3.25</option>
+        <option value="3.5">3.50</option>
+        <option value="3.75">3.75</option>
+        <option value="4">4.00</option>
+      </select>
+    </div>
+    <div id="targetBox" class="mt-2" style="font-size:13.5px;line-height:1.7"></div>
+  </div>
+
   <div id="studentCard" class="cardx p-4 mb-3 d-none">
     <h5 class="fw-bold mb-1" id="stName">—</h5>
     <div style="color:var(--mut)" id="stMeta"></div>
@@ -253,6 +275,34 @@ function updateDailyLabel(){
   if(btn) btn.disabled = left <= 0;
 }
 
+/* ---- Target CGPA planner: what GPA is needed in the remaining years? ---- */
+function updateTarget(){
+  const box = document.getElementById('targetBox');
+  const sel = document.getElementById('targetCgpa');
+  const data = window._CGPA_DATA;
+  if(!box || !sel || !data) return;
+  const target = parseFloat(sel.value);
+  const cgpa = data.pts / data.cr;
+  const yearsLeft = Math.max(0, 4 - data.yearsDone);
+  if(cgpa >= target){
+    box.innerHTML = `<span style="color:#16a34a;font-weight:700">🎉 You already have CGPA ${cgpa.toFixed(2)} — above the ${target.toFixed(2)} target!</span>`;
+    return;
+  }
+  if(yearsLeft === 0){
+    box.innerHTML = `<span style="color:#dc2626;font-weight:700">CGPA is final at ${cgpa.toFixed(2)} (below ${target.toFixed(2)}). No years left to improve it.</span>`;
+    return;
+  }
+  const avgCrPerYear = data.cr / data.yearsDone;
+  const crRem = Math.round(avgCrPerYear * yearsLeft);
+  const needPts = target * (data.cr + crRem) - data.pts;
+  const needGpa = needPts / crRem;
+  if(needGpa > 4){
+    box.innerHTML = `<span style="color:#dc2626;font-weight:700">Even with GPA 4.00 in your remaining ${yearsLeft} year(s), CGPA ${target.toFixed(2)} is not reachable.</span> <span style="color:var(--mut)">(You would need ${needGpa.toFixed(2)}.)</span>`;
+  }else{
+    box.innerHTML = `To reach CGPA <b>${target.toFixed(2)}</b>, you need an average GPA of <b style="color:var(--acc)">${needGpa.toFixed(2)}</b> in your remaining <b>${yearsLeft}</b> year(s) <span style="color:var(--mut)">(~${crRem} credits, estimated from your average credits/year)</span>.`;
+  }
+}
+
 async function calculate(){
   const reg = document.getElementById('regNo').value.trim();
   const baseYear = parseInt(document.getElementById('baseYear').value) || 2022;
@@ -270,6 +320,7 @@ async function calculate(){
   document.getElementById('years').innerHTML = '';
   document.getElementById('cgpaHero').classList.add('d-none');
   document.getElementById('studentCard').classList.add('d-none');
+  document.getElementById('summaryCard').classList.add('d-none');
   const fa0 = document.getElementById('failAlert'); if(fa0){ fa0.classList.add('d-none'); fa0.innerHTML=''; }
 
   const results = [];   // passed years only: {ex, year, gpa, courses}
@@ -450,6 +501,20 @@ async function calculate(){
     document.getElementById('cgpaSub').textContent =
       `${yrs.length} year(s)  •  ${cr} credits  •  avg of yearly GPAs: ${(yrs.reduce((a,b)=>a+b,0)/yrs.length).toFixed(2)}`;
     document.getElementById('cgpaHero').classList.remove('d-none');
+    // Summary table + target planner
+    window._CGPA_DATA = {pts, cr, yearsDone: results.length};
+    let srows = '';
+    for(const r of results){
+      let ypts=0, ycr=0;
+      for(const c of r.courses){ const gp=GP[c.grade]; if(gp!==undefined){ ypts+=gp*c.credit; ycr+=c.credit; } }
+      srows += `<tr><td>${r.ex.label}</td><td>${r.gpa!==null?r.gpa.toFixed(2):'—'}</td><td>${ycr}</td><td>${ypts.toFixed(2)}</td></tr>`;
+    }
+    document.getElementById('summaryBody').innerHTML = srows;
+    document.getElementById('summaryCgpa').textContent = cgpa.toFixed(2);
+    document.getElementById('summaryCredits').textContent = cr;
+    document.getElementById('summaryPoints').textContent = pts.toFixed(2);
+    document.getElementById('summaryCard').classList.remove('d-none');
+    updateTarget();
     setStatus(`Done ✅ — ${yrs.length} year(s) calculated.`, 'success');
   }else{
     setStatus(`No results found for this registration number.`, 'error');
