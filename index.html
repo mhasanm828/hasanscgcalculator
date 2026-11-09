@@ -49,7 +49,7 @@
   .logo-img{width:46px;height:46px;border-radius:50%;background:#fff;object-fit:contain;padding:2px;box-shadow:0 8px 24px rgba(79,124,255,.35);flex:none}
   .log-panel{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .log-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:11.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
-  .log-body{max-height:220px;overflow-y:auto;padding:4px 0;font-size:13px}
+  .log-body{max-height:100px;overflow-y:auto;padding:4px 0;font-size:13px}
   .log-row{display:flex;gap:10px;align-items:flex-start;padding:7px 14px;border-bottom:1px solid rgba(128,140,160,.08)}
   .log-row:last-child{border-bottom:none}
   .log-time{color:var(--mut);font-size:11.5px;font-variant-numeric:tabular-nums;padding-top:2px;white-space:nowrap}
@@ -346,6 +346,16 @@ async function calculate(){
         if(!firstCodes.has(code) && !retaken.some(r=>String(r.code).trim()===code)) retaken.push(c);
       }
     if(retaken.length){
+      // Show the failed papers IN the first attempt card, like before:
+      // grade F (they were failed, then improved). Use a copy of the data
+      // so the raw API result stays untouched; CGPA still uses the best grade.
+      const first = attemptCards.find(a=>a.attemptNo===1);
+      if(first){
+        const fRows = retaken.map(c=>({...c, grade:'F'}));
+        first.j = {...first.j, courses:[...first.j.courses, ...fRows].sort((a,b)=>parseInt(a.code)-parseInt(b.code))};
+        first.hasFail = true;
+        first.gpa = yearGPA(first.j.courses);
+      }
       retakenByYear.push({label: ex.label, year: mainYear, courses: retaken});
       setStatus(`${ex.label} (${mainYear}): <b>${retaken.length}</b>টি সাবজেক্টে ফেল ছিল — ইমপ্রুভমেন্টে পাস হয়েছে।`, 'warn');
     }
